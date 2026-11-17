@@ -1,0 +1,153 @@
+{
+  "id": "jiuzhaigou",
+  "name": "九寨沟风景名胜区",
+  "saved": "2026-11-14 16:24",
+  "created": "2026-11-14 16:24",
+  "demo": true,
+  "note": "本套参数为 UI 演示标定：数值参考九寨沟公开资料量级，未经景区核实；不得用于真实调度。",
+  "params": {
+    "a_daily_normal": 26000,
+    "a_daily_weekend": 34000,
+    "a_daily_holiday": 41800,
+    "a_peak_hour_flow": 5200,
+    "a_peak_share": 0.124,
+    "a_profile": "1800,3200,5200,4700,4200,3800,3600,3400,3100,2800,2600",
+    "a_direction_split": 0.62,
+    "a_top2_share": 0.58,
+    "a_return_lag": 2.0,
+    "a_reservation_cap": 42000,
+    "a_wait_baseline": 15,
+    "b_topology": "branch",
+    "b_station_count": 6,
+    "b_route_km": 48,
+    "b_cycle_time": 70,
+    "b_oneway_time": 28,
+    "b_rain_increase": 0.2,
+    "b_road_note": "主沟双向两车道，诺日朗为换乘节点；长海支线冬季限速。",
+    "c_bus_total": 220,
+    "c_bus_available": 200,
+    "c_bus_spare": 20,
+    "c_seats": 40,
+    "c_load_coef": 0.85,
+    "c_driver_total": 300,
+    "c_driver_shift": 8,
+    "c_driver_max": 8,
+    "c_charge_note": "夜间充电；每日 12 辆维保窗口 02:00-05:00。",
+    "d_capacity_daily": 43000,
+    "d_capacity_instant": 12000,
+    "d_op_start": 7,
+    "d_op_end": 18,
+    "d_last_bus": 18,
+    "d_dispatch_rule": "mixed",
+    "d_headway_now": 2.0,
+    "d_approval": "值班调度长",
+    "e_weather_note": "雨雪时循环时间 +20%，长海支线可能临时封闭。",
+    "e_history_note": "2025-10-03 长海方向滞留 40 分钟；2026-05-02 诺日朗站台排队溢出。",
+    "e_season_note": "7-10 月旺季；11-3 月淡季，部分车辆维保。",
+    "f_systems": [
+      "ticketing",
+      "gate",
+      "gps",
+      "station_count"
+    ],
+    "f_latency": 12,
+    "f_missing": 0.08,
+    "f_channel": "radio",
+    "f_history": true,
+    "_sources": {
+      "a_daily_holiday": {
+        "source": "景区票务日报 2026-10-03（演示标定）",
+        "conf": "中",
+        "evidence": "input"
+      },
+      "a_daily_normal": {
+        "source": "淡季日均量级（演示标定）",
+        "conf": "低",
+        "evidence": "input"
+      },
+      "a_daily_weekend": {
+        "source": "周末日均量级（演示标定）",
+        "conf": "低",
+        "evidence": "input"
+      },
+      "a_peak_hour_flow": {
+        "source": "闸机分时导出 09:00-10:00（演示标定）",
+        "conf": "中",
+        "evidence": "input"
+      },
+      "a_profile": {
+        "source": "闸机分时导出 · 2026-10-03（演示标定）",
+        "conf": "中",
+        "evidence": "input"
+      },
+      "a_peak_share": {
+        "source": "由高峰小时 / 日客流计算",
+        "conf": "中",
+        "evidence": "calculated"
+      },
+      "b_cycle_time": {
+        "source": "车队调度台账 2026-10（演示标定）",
+        "conf": "中",
+        "evidence": "input"
+      },
+      "b_rain_increase": {
+        "source": "雨天循环时间经验系数，未做分天气实测",
+        "conf": "低",
+        "evidence": "assumed"
+      },
+      "c_bus_available": {
+        "source": "车队日报 · 可出车 200 辆（演示标定）",
+        "conf": "高",
+        "evidence": "input"
+      },
+      "c_seats": {
+        "source": "车型核定载客 40 座（演示标定）",
+        "conf": "高",
+        "evidence": "input"
+      },
+      "c_load_coef": {
+        "source": "运营修正系数经验值，未用实测上下客时间校准",
+        "conf": "低",
+        "evidence": "assumed"
+      },
+      "c_driver_total": {
+        "source": "司机排班表 · 300 人（演示标定）",
+        "conf": "中",
+        "evidence": "input"
+      },
+      "d_capacity_daily": {
+        "source": "核定日承载量 43,000 人（演示标定）",
+        "conf": "中",
+        "evidence": "input"
+      },
+      "d_op_start": {
+        "source": "运营时刻表 07:00（演示标定）",
+        "conf": "高",
+        "evidence": "input"
+      },
+      "d_op_end": {
+        "source": "运营时刻表 18:00（演示标定）",
+        "conf": "高",
+        "evidence": "input"
+      },
+      "f_systems": {
+        "source": "系统清单：票务、闸机、GPS、站点计数",
+        "conf": "中",
+        "evidence": "input"
+      },
+      "f_latency": {
+        "source": "系统联调记录 12 分钟（演示标定）",
+        "conf": "中",
+        "evidence": "input"
+      },
+      "f_channel": {
+        "source": "现场指令以对讲机为主",
+        "conf": "高",
+        "evidence": "input"
+      }
+    },
+    "_name": "九寨沟风景名胜区",
+    "_demo": true,
+    "_note": "本套参数为 UI 演示标定：数值参考九寨沟公开资料量级，未经景区核实；不得用于真实调度。"
+  }
+}

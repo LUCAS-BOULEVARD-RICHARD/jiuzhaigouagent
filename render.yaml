@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: jiuzhaigou-dispatchos
+    runtime: docker
+    region: singapore
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /healthz
+    disk:
+      name: dispatchos-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: DISPATCHOS_DATA_DIR
+        value: /var/data
+      - key: DISPATCHOS_REQUIRE_AUTH
+        value: "1"
+      - key: DISPATCHOS_ACCESS_USER
+        sync: false
+      - key: DISPATCHOS_ACCESS_PASSWORD
+        sync: false

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#0c2b24">
+  <meta name="description" content="九寨景枢 · 景区运力调度工作台：参数管理、运行实况、运行计划、调度建议、司机中枢与运营复盘。">
+  <title>景枢 DispatchOS · 景区运力调度工作台</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230c2b24'/%3E%3Cpath d='M16 20h32v7H16zm0 13h20v7H16zm0 13h32v7H16z' fill='%23e8dcc0'/%3E%3Ccircle cx='47' cy='36.5' r='5' fill='%23c08a4e'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="boot-splash" class="boot-splash" role="status" aria-live="polite">
+    <div class="boot-mark">景枢</div>
+    <div class="boot-line"><span></span></div>
+    <p>正在装配今日调度台…</p>
+  </div>
+
+  <div id="app" class="app"></div>
+  <a class="guest-launch" href="guest.html" target="_blank" rel="noopener">打开游客端 ↗</a>
+  <a class="hub-launch" href="#driver" data-nav="driver">司机中枢</a>
+  <a class="driver-launch" href="driver.html?role=driver" target="_blank" rel="noopener">打开司机端 ↗</a>
+  <div id="modal-root" class="modal-root" aria-live="polite"></div>
+  <div id="toast-root" class="toast-root" aria-live="polite" aria-atomic="false"></div>
+  <script src="js/assistant.js"></script>
+
+  <noscript>
+    <div class="noscript">本工作台需要启用 JavaScript。请使用浏览器打开，或运行 <code>python app.py</code>。</div>
+  </noscript>
+
+  <script src="demo_snapshot.js"></script>
+  <script src="guest-adapter.js"></script>
+  <script src="js/core.js"></script>
+  <script src="js/pages.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
+
+
+

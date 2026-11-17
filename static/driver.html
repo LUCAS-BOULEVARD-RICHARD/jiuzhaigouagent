@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0c2b24">
+  <title>九寨景枢 · 司机端</title>
+  <link rel="stylesheet" href="guest.css">
+  <link rel="stylesheet" href="driver.css">
+</head>
+<body>
+  <div class="app-shell driver-shell">
+    <header class="guest-head">
+      <div class="brand"><span class="brand-mark">景</span><span><b>司机端</b><small>九寨沟景区出行</small></span></div>
+      <a class="driver-link" href="index.html?role=dispatcher#overview">景区端 ↗</a>
+    </header>
+    <main id="driver-app" aria-live="polite"></main>
+    <nav id="driver-tabs" class="tabbar">
+      <button class="active" data-page="tasks">任务</button>
+      <button data-page="report">现场报数</button>
+      <button data-page="me">我的</button>
+    </nav>
+  </div>
+  <div id="toast" role="status"></div>
+  <script src="demo_snapshot.js"></script>
+  <script src="driver.js"></script>
+</body>
+</html>
