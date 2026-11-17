@@ -3,7 +3,7 @@ services:
     name: jiuzhaigou-dispatchos
     runtime: docker
     region: singapore
-    plan: starter
+    plan: 0.5c-512mb
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /healthz
