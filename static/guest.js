@@ -84,6 +84,25 @@
     return `<section class="section crowd-section" id="crowd-module" aria-live="off"><div class="section-title"><div><small>LIVE OCCUPANCY</small><h2><span class="live-dot" aria-hidden="true"></span>车辆拥挤实况</h2></div><div class="crowd-tools"><span class="badge demo">演示†</span><button class="link crowd-refresh" data-action="crowd-refresh" aria-label="刷新车辆拥挤程度" title="刷新车辆拥挤程度">刷新</button></div></div><div class="crowd-summary">${list.length} 辆运行中 · ${crowded} 辆拥挤或满员 · 平均载客 ${avg}% · 最近上报 ${fmtTime(s.vehiclesUpdatedAt || s.updatedAt)}</div>${list.length ? `<div class="veh-list">${list.map(vehicleRow).join('')}</div>` : '<div class="notice">暂无车辆上报，请稍后刷新。</div>'}<p class="source">拥挤度 = 载客 ÷ 核定座位 · 满员按 ≥90% 运营阈值提示 · 每 15 秒本地模拟；真实系统需接车载客流计数</p></section>`;
   }
 
+  /* ---------- 站点人流与分流建议 ---------- */
+  function stationGuide(station) {
+    if (station.level !== 'crowded' && station.level !== 'full') return '';
+    const rest = station.restArea || {};
+    const alternative = station.alternativeStop || {};
+    return `<div class="station-guide"><b>当前人流较多，建议分流：</b>${rest.name ? `<span>先至 ${esc(rest.name)} 休息（约 ${rest.walkMinutes} 分钟）</span>` : ''}${alternative.name ? `<span>或改到 ${esc(alternative.name)} 候车（约 ${alternative.walkMinutes} 分钟）</span>` : ''}</div>`;
+  }
+
+  function stationRow(station) {
+    const level = levelClass(station);
+    return `<article class="station-flow-row level-${level}"><div class="station-flow-head"><div><b>${esc(station.name)}</b><span class="station-flow-status ${level}">${esc(station.levelLabel || LEVEL_NAMES[level])}</span></div><div class="station-flow-count"><b>${station.people}</b><span>人</span></div></div><div class="station-flow-meta">当前人流 ${station.crowdPct}% · ${esc(station.freshLabel || '实时')}上报 ${ageText(station.ageSeconds)}</div><div class="station-flow-track"><i style="width:${station.crowdPct}%"></i></div>${stationGuide(station)}</article>`;
+  }
+
+  function stationCrowdSection(s) {
+    const stations = (s.stations || []).slice();
+    const crowded = stations.filter((station) => station.level === 'crowded' || station.level === 'full').length;
+    return `<section class="section station-crowd-section" id="station-crowd-module" aria-live="polite"><div class="section-title"><div><small>STATION FLOW</small><h2>站点人流量</h2></div><div class="crowd-tools"><span class="badge demo">演示†</span><button class="link crowd-refresh" data-action="station-refresh" aria-label="刷新站点人流量" title="刷新站点人流量">刷新</button></div></div><div class="station-flow-summary">${stations.length} 个站点 · ${crowded} 个站点人流较多 · 最近更新 ${fmtTime(s.stationsUpdatedAt || s.updatedAt)}</div>${stations.length ? `<div class="station-flow-list">${stations.map(stationRow).join('')}</div>` : '<div class="notice">暂无站点人流上报，请稍后刷新。</div>'}<p class="source">人流较多（≥70%）时，显示已配置的最近休息区与替代乘车点；路线与步行时间为演示†，请以现场导视和工作人员指引为准。</p></section>`;
+  }
+
   /* ---------- 车辆详情弹窗 ---------- */
   function vehicleDetail(s, id) {
     const v = (s.vehicles || []).find((x) => x.id === id);
@@ -124,8 +143,15 @@
       const refreshFocused = document.activeElement && document.activeElement.dataset && document.activeElement.dataset.action === 'crowd-refresh';
       const cs = $('#crowd-module');
       if (cs) cs.outerHTML = crowdSection(s);
+      const stationRefreshFocused = document.activeElement && document.activeElement.dataset && document.activeElement.dataset.action === 'station-refresh';
+      const ss = $('#station-crowd-module');
+      if (ss) ss.outerHTML = stationCrowdSection(s);
       if (refreshFocused) {
         const b = document.querySelector('[data-action="crowd-refresh"]');
+        if (b) b.focus();
+      }
+      if (stationRefreshFocused) {
+        const b = document.querySelector('[data-action="station-refresh"]');
         if (b) b.focus();
       }
       refreshDetail();
@@ -139,7 +165,7 @@
   function home() {
     const s = state();
     const slots = s.slots;
-    return `<section class="hero"><div class="eyebrow">SCENIC TRANSIT · 九寨沟景区</div><h1>把好风景，<br><em>交给从容的旅程。</em></h1><p>查看观光车运行与预约上车名额</p><div class="hero-land" aria-hidden="true"><i></i><b></b><span></span></div></section>${vehicleSection(s)}${crowdSection(s)}<section class="section"><div class="section-title"><div><small>可预约时段</small><h2>选择上车名额</h2></div><button class="link" data-go="booking">查看全部</button></div>${s.bookingOpen ? slots.slice(0, 2).map((x) => `<button class="slot-card" data-slot="${x.id}"><span><b>${esc(x.label)}</b><small>${esc(x.route)} · ${esc(x.stop)}上车</small></span><span class="slot-open">预约开放 <b>›</b></span></button>`).join('') : '<div class="notice">当前时段线上预约入口已关闭。已确认预约仍按原规则处理。</div>'}<p class="source">预约锁定上车名额，不指定座位 · 容量按班次 70% 预约池 / 30% 现场池分配</p></section><section class="section note-card"><b>乘车提示</b><p>请按预约时段到指定站点核销。车辆状态会按数据新鲜度显示为实时、推算或计划。</p></section>`;
+    return `<section class="hero"><div class="eyebrow">SCENIC TRANSIT · 九寨沟景区</div><h1>把好风景，<br><em>交给从容的旅程。</em></h1><p>查看观光车运行与预约上车名额</p><div class="hero-land" aria-hidden="true"><i></i><b></b><span></span></div></section>${vehicleSection(s)}${crowdSection(s)}${stationCrowdSection(s)}<section class="section"><div class="section-title"><div><small>可预约时段</small><h2>选择上车名额</h2></div><button class="link" data-go="booking">查看全部</button></div>${s.bookingOpen ? slots.slice(0, 2).map((x) => `<button class="slot-card" data-slot="${x.id}"><span><b>${esc(x.label)}</b><small>${esc(x.route)} · ${esc(x.stop)}上车</small></span><span class="slot-open">预约开放 <b>›</b></span></button>`).join('') : '<div class="notice">当前时段线上预约入口已关闭。已确认预约仍按原规则处理。</div>'}<p class="source">预约锁定上车名额，不指定座位 · 容量按班次 70% 预约池 / 30% 现场池分配</p></section><section class="section note-card"><b>乘车提示</b><p>请按预约时段到指定站点核销。车辆状态会按数据新鲜度显示为实时、推算或计划。</p></section>`;
   }
 
   /* ---------- 预约 ---------- */
@@ -161,7 +187,7 @@
     const s = state();
     const list = s.vehicles || [];
     const crowded = list.filter((v) => v.level === 'crowded' || v.level === 'full').length;
-    return `<div class="page-title"><small>ROUTES & STOPS</small><h1>线路与站点</h1><p>线路骨架示意，不提供地图定位</p></div><div class="route-map"><div><i>1</i><b>游客中心</b></div><span></span><div><i>2</i><b>诺日朗</b></div><span></span><div><i>3</i><b>长海</b></div></div><section class="section"><h2>定位状态规则</h2><p>≤60 秒：实时；60 秒至 3 分钟：推算；超过 3 分钟：计划。定位断链时顶部灰条说明，不弹窗。</p><div class="source">当前车辆数据：${evidence(s.vehicle.evidence)} · ${list.length} 辆 · 更新于 ${fmtTime(s.vehiclesUpdatedAt || s.updatedAt)}</div></section><section class="section" id="crowd-rules"><h2>拥挤程度规则</h2><p>拥挤度 = 载客 ÷ 核定座位，按四档显示：</p><div class="crowd-legend"><span class="legend-item"><i class="legend-dot empty"></i>空闲 &lt;40%</span><span class="legend-item"><i class="legend-dot normal"></i>适中 40–70%</span><span class="legend-item"><i class="legend-dot crowded"></i>拥挤 70–90%</span><span class="legend-item"><i class="legend-dot full"></i>满员 ≥90%</span></div><p class="source">当前 ${list.length} 辆运行，${crowded} 辆拥挤或满员 · 演示† 数据每 15 秒本地更新，真实系统需接车载客流计数与票务核销数据</p><button class="link" data-go="home">查看车辆拥挤实况 ›</button></section><section class="section"><h2>乘车规则</h2><p>预约绑定实名票号，一票一约；改签或退票成功自动释放原名额。班次容量由预约池与现场池共同分配。</p></section>`;
+    return `<div class="page-title"><small>ROUTES & STOPS</small><h1>线路与站点</h1><p>线路骨架示意，不提供地图定位</p></div><div class="route-map"><div><i>1</i><b>游客中心</b></div><span></span><div><i>2</i><b>诺日朗</b></div><span></span><div><i>3</i><b>长海</b></div></div>${stationCrowdSection(s)}<section class="section"><h2>定位状态规则</h2><p>≤60 秒：实时；60 秒至 3 分钟：推算；超过 3 分钟：计划。定位断链时顶部灰条说明，不弹窗。</p><div class="source">当前车辆数据：${evidence(s.vehicle.evidence)} · ${list.length} 辆 · 更新于 ${fmtTime(s.vehiclesUpdatedAt || s.updatedAt)}</div></section><section class="section" id="crowd-rules"><h2>拥挤程度规则</h2><p>拥挤度 = 载客 ÷ 核定座位，按四档显示：</p><div class="crowd-legend"><span class="legend-item"><i class="legend-dot empty"></i>空闲 &lt;40%</span><span class="legend-item"><i class="legend-dot normal"></i>适中 40–70%</span><span class="legend-item"><i class="legend-dot crowded"></i>拥挤 70–90%</span><span class="legend-item"><i class="legend-dot full"></i>满员 ≥90%</span></div><p class="source">当前 ${list.length} 辆运行，${crowded} 辆拥挤或满员 · 演示† 数据每 15 秒本地更新，真实系统需接车载客流计数与票务核销数据</p><button class="link" data-go="home">查看车辆拥挤实况 ›</button></section><section class="section"><h2>乘车规则</h2><p>预约绑定实名票号，一票一约；改签或退票成功自动释放原名额。班次容量由预约池与现场池共同分配。</p></section>`;
   }
 
   function render() {
@@ -198,6 +224,10 @@
         A.refreshVehicles();
         showToast('车辆拥挤度已刷新');
       }
+      if (act.dataset.action === 'station-refresh') {
+        A.refreshStations();
+        showToast('站点人流量已刷新');
+      }
     });
 
     document.addEventListener('submit', (e) => {
@@ -226,7 +256,7 @@
   }).catch(() => {});
 
   A.subscribe((m) => {
-    if (m && m.kind === 'vehicle.crowding.changed') {
+    if (m && (m.kind === 'vehicle.crowding.changed' || m.kind === 'station.crowding.changed')) {
       updateLive();
       return;
     }

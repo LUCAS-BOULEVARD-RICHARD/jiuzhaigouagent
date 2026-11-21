@@ -6,6 +6,7 @@
   "use strict";
 
   const DOS = (global.DOS = global.DOS || {});
+  DOS.appName = "智调中枢";
   const U = (DOS.util = {});
   const I = (DOS.icons = {});
   const UI = (DOS.ui = {});
@@ -308,7 +309,7 @@
     return (
       '<div class="page-head">' +
         '<div class="page-head-copy">' +
-          '<div class="eyebrow">' + U.esc(o.kicker || "") + "</div>" +
+          (o.kicker ? '<div class="eyebrow">' + U.esc(o.kicker) + "</div>" : "") +
           '<h1 class="page-title">' + U.esc(o.title || "") + "</h1>" +
           (o.desc ? '<p class="page-desc">' + o.desc + "</p>" : "") +
         "</div>" +
@@ -357,10 +358,10 @@
     );
   };
 
-  UI.kpi = function (o, meta) {
+  UI.kpi = function (o, meta, options = {}) {
     const tone = o.status === "red" ? "is-red" : o.status === "warn" ? "is-warn" : "is-ok";
     return (
-      '<article class="kpi ' + tone + '">' +
+      '<article class="kpi ' + tone + (options.featured ? ' kpi-featured' : '') + '">' +
         '<div class="kpi-top">' +
           '<span class="kpi-label" title="' + U.esc(o.label) + '">' + U.esc(o.label) + "</span>" +
           (o.evidence ? UI.evidence(meta, o.evidence) : "") +
@@ -370,6 +371,7 @@
         '<div class="kpi-meta">' +
           (o.target ? '<span class="kpi-target">' + U.esc(o.target) + "</span>" : "") +
           (o.delta ? '<span class="kpi-delta">' + U.esc(o.delta) + "</span>" : "") +
+          (options.status ? UI.tag(options.status, o.status === "red" ? "red" : o.status === "warn" ? "amber" : "green") : "") +
         "</div>" +
         (o.hint ? '<p class="kpi-hint" title="' + U.esc(o.hint) + '">' + U.esc(o.hint) + "</p>" : "") +
         (o.trend && o.trend.length > 1 ? UI.sparkline(o.trend, tone === "is-red" ? "#ab4030" : tone === "is-warn" ? "#b37d20" : "#2b7a5b") : "") +

@@ -56,6 +56,7 @@
       evidence: 'demo', nextStopEvidence: 'demo'
     },
     vehicles: [],
+    stations: [],
     lastReconcile: '演示数据†'
   };
 
@@ -78,7 +79,30 @@
 
   let vehicles = seedVehicles();
   let vehiclesUpdatedAt = new Date().toISOString();
+  let stationsUpdatedAt = new Date().toISOString();
   let timer = null;
+
+  /* 站点人流为游客端演示数据；真实接入应以站点计数、闸机或人工报数为准。 */
+  function seedStations() {
+    const now = Date.now();
+    const make = (id, name, people, capacity, restArea, alternativeStop, ageSeconds) => ({
+      id, name, people, capacity, restArea, alternativeStop,
+      reportedAt: new Date(now - ageSeconds * 1000).toISOString(), evidence: 'demo'
+    });
+    return [
+      make('visitor-center', '游客中心站', 58, 150,
+        { name: '游客中心服务厅休息区', walkMinutes: 2 },
+        { name: '沟口换乘站', walkMinutes: 4 }, 35),
+      make('nuorilang', '诺日朗站', 172, 190,
+        { name: '诺日朗游客服务中心休息区', walkMinutes: 2 },
+        { name: '诺日朗东侧备用上车点', walkMinutes: 4 }, 20),
+      make('changhai', '长海站', 46, 120,
+        { name: '长海候车休息区', walkMinutes: 2 },
+        { name: '五彩池接驳站', walkMinutes: 5 }, 50)
+    ];
+  }
+
+  let stations = seedStations();
 
   function freshnessOf(reportedAt, now) {
     let age = (now - new Date(reportedAt).getTime()) / 1000;
@@ -108,6 +132,19 @@
     });
   }
 
+  function normalizeStation(station, now) {
+    const capacity = Math.max(1, Math.round(Number(station.capacity) || 1));
+    const people = Math.max(0, Math.min(capacity, Math.round(Number(station.people) || 0)));
+    const pct = Math.round((people / capacity) * 100);
+    const level = pct >= 90 ? 'full' : pct >= 70 ? 'crowded' : pct >= 40 ? 'normal' : 'empty';
+    const fresh = freshnessOf(station.reportedAt, now);
+    return Object.assign({}, station, {
+      people, capacity, crowdPct: pct, level, levelLabel: LEVELS[level],
+      freshness: fresh.key, freshLabel: fresh.label, ageSeconds: fresh.ageSeconds,
+      evidence: station.evidence || 'demo'
+    });
+  }
+
   /* 车辆状态只在内存里模拟，预约写入时不要把 vehicles 一并固化到 localStorage。 */
   function persist(s) {
     const copy = Object.assign({}, s);
@@ -125,6 +162,7 @@
     }
     const now = Date.now();
     s.vehicles = vehicles.map((v) => normalizeVehicle(v, now));
+    s.stations = stations.map((station) => normalizeStation(station, now));
     /* 顶部“车辆运行”跟随最近一辆车，保证两个模块的到站信息一致。 */
     const nearest = s.vehicles.slice().sort((a, b) => a.etaMinutes - b.etaMinutes || a.id.localeCompare(b.id))[0];
     if (nearest) {
@@ -138,6 +176,7 @@
       });
     }
     s.vehiclesUpdatedAt = vehiclesUpdatedAt;
+    s.stationsUpdatedAt = stationsUpdatedAt;
     return s;
   }
 
@@ -192,6 +231,26 @@
       vehicles: vehicles.map((v) => normalizeVehicle(v, now)),
       updatedAt: vehiclesUpdatedAt
     }, true);
+    simulateStations(force);
+    return true;
+  }
+
+  function simulateStations(force) {
+    if (!force && typeof document !== 'undefined' && document.hidden) return false;
+    const now = Date.now();
+    let reported = 0;
+    stations.forEach((station) => {
+      if (!force && Math.random() > 0.82) return;
+      reported++;
+      station.people = Math.max(8, Math.min(station.capacity, station.people + Math.round(Math.random() * 18) - 9));
+      station.reportedAt = new Date(now).toISOString();
+    });
+    if (!reported && !force) return false;
+    stationsUpdatedAt = new Date(now).toISOString();
+    emit('station.crowding.changed', {
+      stations: stations.map((station) => normalizeStation(station, now)),
+      updatedAt: stationsUpdatedAt
+    }, true);
     return true;
   }
 
@@ -201,7 +260,8 @@
     capabilities: [
       'booking.read', 'booking.create', 'booking.cancel', 'booking.close',
       'location.read', 'ticket.validate.mock', 'station.checkin.mock',
-      'vehicle.crowding.read', 'vehicle.crowding.subscribe'
+      'vehicle.crowding.read', 'vehicle.crowding.subscribe',
+      'station.crowding.read', 'station.crowding.subscribe'
     ],
     adapter: 'snapshot',
     connect() {
@@ -215,9 +275,14 @@
     },
     getState() { return read(); },
     getVehicles() { return read().vehicles; },
+    getStations() { return read().stations; },
     refreshVehicles() {
       simulate(true);
       return read().vehicles;
+    },
+    refreshStations() {
+      simulateStations(true);
+      return read().stations;
     },
     subscribe(fn) {
       listeners.add(fn);

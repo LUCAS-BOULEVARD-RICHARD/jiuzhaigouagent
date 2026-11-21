@@ -6,8 +6,16 @@
   }[c]));
   const params = new URLSearchParams(location.search);
   const boot = window.DISPATCH_BOOT || {};
-  const sceneId = params.get("scene") || localStorage.getItem("dispatchos.scene") || boot.default_scene || "morning";
-  let projectId = params.get("project") || localStorage.getItem("dispatchos.project") || boot.default_project || "jiuzhaigou";
+  // ResumeDock serves published pages in a sandbox where Web Storage may be unavailable.
+  // Keep the standalone driver page usable by falling back to the embedded snapshot.
+  function readStored(key) {
+    try { return localStorage.getItem(key); } catch (_) { return null; }
+  }
+  function writeStored(key, value) {
+    try { localStorage.setItem(key, value); return true; } catch (_) { return false; }
+  }
+  const sceneId = params.get("scene") || readStored("dispatchos.scene") || boot.default_scene || "morning";
+  let projectId = params.get("project") || readStored("dispatchos.project") || boot.default_project || "jiuzhaigou";
   let snap = null;
   let online = false;
   let page = "tasks";
@@ -80,7 +88,7 @@
     snap = JSON.parse(JSON.stringify(source));
     const key = "dispatchos.driver." + projectId + "." + sceneId;
     try {
-      const local = JSON.parse(localStorage.getItem(key) || "null");
+      const local = JSON.parse(readStored(key) || "null");
       if (local && snap.driver) snap.driver = Object.assign(snap.driver, local);
     } catch (_) {}
   }
@@ -101,7 +109,7 @@
   }
   function saveOffline() {
     const d = snap.driver || {};
-    localStorage.setItem("dispatchos.driver." + projectId + "." + sceneId, JSON.stringify({ tasks: d.tasks || [], station: d.station || {} }));
+    writeStored("dispatchos.driver." + projectId + "." + sceneId, JSON.stringify({ tasks: d.tasks || [], station: d.station || {} }));
   }
   async function action(body) {
     body.project = projectId;

@@ -78,7 +78,7 @@
       page: null,
       selectedCardId: null,
       caseFilter: "all",
-      params: { group: "all", flag: "all", q: "" },
+      params: { group: "all", flag: "all", q: "", expandedGroups: {} },
       dirty: {},
       rejecting: null,
       optimizerResult: null,
@@ -318,7 +318,7 @@
       }
       $("#app").innerHTML = this.shell(inner);
       this.state.navOpen = false;
-      document.title = (PAGE_DEFS[page] ? PAGE_DEFS[page].name : "调度台") + " · " + (meta.app || "景枢 DispatchOS");
+      document.title = (PAGE_DEFS[page] ? PAGE_DEFS[page].name : "调度台") + " · " + DOS.appName;
       this.syncDirtyUI();
       if (page === "guest") { const scan = $("[data-checkin-code]"); if (scan) scan.focus(); }
       if (opts.top) window.scrollTo(0, 0);
@@ -333,7 +333,6 @@
       const allowed = meta.pages || [];
       const project = meta.project || {};
       const projects = this.state.projects || [];
-      const scene = meta.scene || {};
       const p = s.params || {};
       const counts = p.counts || {};
       const p0 = Number(p.p0_filled || 0);
@@ -348,7 +347,8 @@
             const def = PAGE_DEFS[id];
             const n = this.navCount(id);
             return '<button type="button" class="nav-item ' + (page === id ? "is-active" : "") +
-              '" data-nav="' + id + '"><span class="nav-icon">' + I.icon(def.icon) + "</span>" +
+              '" data-nav="' + id + '"' + (page === id ? ' aria-current="page"' : '') +
+              '><span class="nav-icon">' + I.icon(def.icon) + "</span>" +
               '<span class="nav-label">' + esc(def.name) + "</span>" +
               (n ? '<span class="nav-count">' + n + "</span>" : "") + "</button>";
           }).join("") + "</div>";
@@ -364,7 +364,7 @@
       return '<div class="shell">' +
         '<div class="scrim" data-action="close-nav"></div>' +
         '<aside class="sidebar" id="sidebar"><div class="sidebar-inner">' +
-          '<div class="brand"><div class="brand-mark">景</div><div class="brand-text"><div class="brand-name">九寨景枢</div>' +
+          '<div class="brand"><div class="brand-mark">智</div><div class="brand-text"><div class="brand-name">' + DOS.appName + '</div>' +
             '<div class="brand-sub">DISPATCH<b>OS</b></div></div></div>' +
           '<button type="button" class="project-mini" data-nav="scenic">' +
             '<div class="project-mini-top"><span class="project-mini-name">' + esc(project.name || "选择景区") + "</span>" +
@@ -372,7 +372,7 @@
             '<div class="project-mini-meta">' + p0 + "/" + p0Total + " P0 · 完整度 " + completeness + '%</div>' +
             '<div class="project-mini-bar"><i style="width:' + Math.max(2, completeness) + '%"></i></div>' +
           "</button>" +
-          '<div class="nav">' + nav + "</div>" +
+          '<nav class="nav" aria-label="景区端">' + nav + "</nav>" +
           '<div class="sidebar-foot">' +
             '<div class="role-card"><div class="role-avatar">' + esc((role.name || "调").slice(0, 1)) + "</div>" +
               '<div class="role-card-main"><b>' + esc(role.name || "调度员") + "</b><small>" + esc(role.desc || "演示角色") + "</small></div>" +
@@ -387,7 +387,7 @@
           '<header class="topbar"><div class="topbar-left">' +
             '<button type="button" class="icon-btn mobile-menu" data-action="toggle-nav" aria-label="菜单">' + I.icon("menu") + "</button>" +
             '<div class="crumb"><span class="crumb-project">' + esc(project.name || "") + '</span><span class="crumb-sep">/</span>' +
-              '<span class="crumb-page">' + esc(PAGE_DEFS[page] ? PAGE_DEFS[page].name : "") + '</span><span class="crumb-sep">/</span>' +
+              '<span class="crumb-page">' + esc(PAGE_DEFS[page] ? PAGE_DEFS[page].name : "") + '</span><span class="crumb-sep crumb-date-sep">/</span>' +
               '<span class="crumb-date">' + esc(meta.date || "") + " · " + esc(meta.scene && meta.scene.time || "") + "</span></div>" +
           "</div>" +
           '<div class="top-actions">' +
@@ -397,7 +397,7 @@
               '<select class="select select-project" data-select="project" aria-label="切换景区">' + projectOptions + "</select></label>" +
             '<label class="select-wrap select-role-wrap" title="切换角色">' + I.icon("user") +
               '<select class="select select-role" data-select="role" aria-label="切换角色">' + roleOptions + "</select></label>" +
-            '<details class="menu"><summary class="btn btn-sm">' + I.icon("export") + '<span class="mobile-hide">导出</span></summary>' +
+            '<details class="menu"><summary class="btn btn-sm" aria-label="导出">' + I.icon("export") + '<span>导出</span></summary>' +
               '<div class="menu-pop">' +
                 '<button type="button" data-action="export-report">运行快报 · Markdown</button>' +
                 '<button type="button" data-action="export-snapshot">当前快照 · JSON</button>' +
@@ -456,19 +456,26 @@
       const fields = this.filteredFields();
       const groups = p.groups || [];
       const selected = this.state.params.group || "all";
+      const expandedGroups = this.state.params.expandedGroups || {};
       const groupDefs = selected === "all" ? groups : groups.filter((g) => g.id === selected);
       let out = "";
       groupDefs.forEach((g) => {
         const list = fields.filter((f) => f.group === g.id);
         if (!list.length) return;
+        const expanded = !!expandedGroups[g.id];
         const pct = Math.round(Number(g.completeness || 0) * 100);
-        out += '<section class="param-group"><div class="param-group-head">' +
+        out += '<section class="param-group' + (expanded ? " is-expanded" : " is-collapsed") + '"><div class="param-group-head">' +
           '<div class="param-group-letter">' + esc(g.id) + "</div>" +
           '<div class="param-group-main"><div class="param-group-name">' + esc(g.name) + "</div>" +
             '<div class="param-group-desc">' + esc(g.desc || "") + "</div></div>" +
           '<div class="param-group-count">' + Number(g.filled || 0) + "/" + Number(g.total || 0) + "</div>" +
-          '<div class="param-group-meter"><i style="width:' + Math.max(2, pct) + '%"></i></div></div>' +
-          '<div class="param-list">' + list.map((f) => this.paramRow(f)).join("") + "</div></section>";
+          '<div class="param-group-meter"><i style="width:' + Math.max(2, pct) + '%"></i></div>' +
+          '</div><div class="param-group-toggle-row">' +
+          '<button type="button" class="param-group-toggle" data-param-group-toggle="' + esc(g.id) + '" aria-expanded="' + expanded + '" aria-label="' +
+            (expanded ? "收起" : "展开") + esc(g.name) + '"><span>' + (expanded ? "收起" : "展开") +
+            '</span><i class="param-group-toggle-icon" aria-hidden="true"></i></button></div>' +
+          (!expanded ? '<div class="param-group-collapsed-hint">' + list.length + ' 项参数已收起</div>' :
+            '<div class="param-list">' + list.map((f) => this.paramRow(f)).join("") + "</div>") + "</section>";
       });
       if (!out) {
         out = UI.empty("没有匹配的参数", "换一个分组、状态或搜索词。", "search");
@@ -1108,14 +1115,14 @@
       this.toast("已切换为 " + (role.name || id) + "（权限为示意）。", "info");
     },
 
-    async switchScene(id) {
+    async switchScene(id, { keepPage = false } = {}) {
       if (!id || id === this.state.scene) return;
       if (!this.confirmDiscard()) return;
       this.state.scene = id;
-      this.state.page = null;
+      if (!keepPage) this.state.page = null;
       this.state.dirty = {};
       U.writeJSON(PREFS.scene, id);
-      await this.load({ focus: true });
+      await this.load({ focus: !keepPage });
       const sc = (this.state.snap.meta.scenes || []).find((x) => x.id === id) || {};
       this.toast("已切到第 " + (sc.act || 1) + " 幕 · " + (sc.label || id) + "。", "info");
     },
@@ -1225,7 +1232,7 @@
     openModal(o) {
       const root = $("#modal-root");
       root.innerHTML = '<div class="modal-backdrop" data-close-modal="1"></div>' +
-        '<div class="modal-panel ' + (o.wide ? "is-wide" : "") + '" role="dialog" aria-modal="true" aria-label="' + esc(o.title) + '">' +
+        '<div class="modal-panel ' + (o.wide ? "is-wide" : "") + (o.className ? " " + esc(o.className) : "") + '" role="dialog" aria-modal="true" aria-label="' + esc(o.title) + '">' +
           '<div class="modal-head"><div><div class="modal-title">' + esc(o.title || "") + "</div>" +
             (o.sub ? '<div class="modal-sub">' + esc(o.sub) + "</div>" : "") + "</div>" +
             '<button type="button" class="icon-btn" data-close-modal="1" aria-label="关闭">' + I.icon("close") + "</button></div>" +
@@ -1289,7 +1296,7 @@
         UI.tag(x.level || "备选", "outline") + "</div><p class=\"small\">" + esc(x.summary || "") + "</p></div>").join("");
       const catalog = (mode.catalog || []).map((x) =>
         '<div class="matrix-row"><b>' + esc(x.name || x.id) + "</b><span>" + esc(x.summary || x.desc || "") + "</span></div>").join("");
-      const body = '<div class="card is-flat"><div class="card-body">' +
+      const body = '<div class="mode-library"><div class="card is-flat"><div class="card-body">' +
         '<div class="mode-head"><span class="mode-level is-' + esc(mode.level || "semi") + '">' +
         esc((DOS.pageMeta.MODE_LABEL || {})[mode.level] || mode.level) + "</span>" +
         '<span class="tiny muted">延迟 ' + esc(mode.latency || "—") + " 分钟</span></div>" +
@@ -1298,10 +1305,10 @@
         '<div class="desk-note">' + esc(base.why || "") + "</div>" +
         '<div class="desk-note mt-6">风险：' + esc(base.risk || "—") + "</div></div></div>" +
         '<div class="section-label">备选方案</div>' + (alts || UI.empty("暂无备选")) +
-        '<div class="section-label">能力目录</div>' + (catalog || UI.empty("暂无目录"));
+        '<div class="section-label">能力目录</div>' + (catalog || UI.empty("暂无目录")) + "</div>";
       this.openModal({
         title: "调度模式库", sub: "系统先判断自己能协同到什么程度，再给方案。",
-        body: body, wide: true,
+        body: body, wide: true, className: "mode-library-modal",
       });
     },
 
@@ -1525,6 +1532,15 @@
         return;
       }
 
+      el = pick("[data-param-group-toggle]");
+      if (el) {
+        const id = el.getAttribute("data-param-group-toggle");
+        const expandedGroups = this.state.params.expandedGroups || {};
+        this.state.params.expandedGroups = { ...expandedGroups, [id]: !expandedGroups[id] };
+        this.refreshParamList();
+        return;
+      }
+
       el = pick("[data-param-flag]");
       if (el) {
         this.state.params.flag = el.getAttribute("data-param-flag");
@@ -1551,6 +1567,14 @@
       }
       if (t.matches('select[data-select="role"]')) {
         this.switchRole(t.value);
+        return;
+      }
+      if (t.matches('select[data-select="scene"]')) {
+        t.disabled = true;
+        this.switchScene(t.value, { keepPage: true }).finally(() => {
+          t.value = this.state.scene;
+          t.disabled = false;
+        });
         return;
       }
       if (t.matches("[data-param-key]")) {

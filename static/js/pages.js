@@ -85,16 +85,15 @@
     const a = s.archive || {};
     const projects = a.projects || [];
     const cur = s.meta.project || {};
+    const allowed = s.meta.pages || [];
 
-    const hero = '<section class="scenic-hero">' +
+    const hero = '<section class="scenic-hero" aria-labelledby="current-scenic-name">' +
       '<div class="hero-copy">' +
-        '<div class="eyebrow">九寨景枢 · 调度工作台</div>' +
-        '<h2 class="hero-title">' + esc(cur.name || "未命名景区") + '</h2>' +
-        '<p class="hero-desc">从当前景区开始，查看运行实况、安排班次或处理调度建议。</p>' +
+        '<div class="eyebrow">当前景区</div>' +
+        '<h2 class="hero-title" id="current-scenic-name">' + esc(cur.name || "未命名景区") + '</h2>' +
         '<div class="hero-actions">' +
-          '<button class="btn btn-primary btn-lg" data-nav="overview">' + I.icon("gauge") + '进入运行实况</button>' +
-          '<button class="btn btn-lg" data-nav="params">' + I.icon("sliders") + '打开工作台</button>' +
-          '<button class="btn btn-lg" data-action="project-new">' + I.icon("plus") + '新建景区</button>' +
+          (allowed.includes("overview") ? '<button type="button" class="btn btn-primary btn-lg" data-nav="overview">' + I.icon("gauge") + '进入运行实况</button>' : '') +
+          (allowed.includes("params") ? '<button type="button" class="btn btn-lg" data-nav="params">' + I.icon("sliders") + '打开工作台</button>' : '') +
         '</div>' +
       '</div>' +
     '</section>';
@@ -105,17 +104,21 @@
       return '<article class="project-card ' + (isCurrent ? "is-current" : "") + '">' +
         '<div class="project-card-top">' +
           '<div class="project-glyph">' + esc((p.name || "?").slice(0, 1)) + "</div>" +
-          '<div style="min-width:0"><div class="project-name">' + esc(p.name || p.id) + "</div>" +
-          '<div class="project-id">' + esc(p.id) + (p.demo ? " · DEMO" : "") + "</div></div>" +
+          '<div class="project-identity"><h3 class="project-name">' + esc(p.name || p.id) + "</h3>" +
+          '<div class="project-id">' + esc(p.id) + "</div></div>" +
+          '<div class="project-tags">' +
+            (isCurrent ? UI.tag("当前", "ochre") : "") +
+            (p.demo ? UI.tag("演示†", "slate") : "") +
+          "</div>" +
         "</div>" +
         '<p class="project-note">' + esc(p.note || "未填写项目说明。") + "</p>" +
         '<div class="project-foot">' +
-          '<div class="project-meter"><i style="width:' + Math.max(2, pct) + '%"></i></div>' +
-          '<span class="project-pct">' + pct + "%</span>" +
+          '<div class="project-progress"><div class="project-progress-label"><span>档案完整度</span><b class="project-pct">' +
+            pct + '%</b></div><div class="project-meter" aria-hidden="true"><i style="width:' + U.clamp(pct, 0, 100) + '%"></i></div></div>' +
           '<div class="project-actions">' +
             (isCurrent
-              ? '<button type="button" class="btn btn-sm" data-nav="params">台账</button>'
-              : '<button type="button" class="btn btn-sm" data-project-enter="' + esc(p.id) + '">进入</button>') +
+              ? (allowed.includes("params") ? '<button type="button" class="btn btn-sm" data-nav="params">查看台账</button>' : "")
+              : '<button type="button" class="btn btn-sm" data-project-enter="' + esc(p.id) + '">进入景区</button>') +
             iconBtn("复制景区", "project-duplicate", "copy", { attrs: ' data-project="' + esc(p.id) + '"' }) +
             (projects.length > 1
               ? iconBtn("删除景区", "project-delete", "trash", { attrs: ' data-project="' + esc(p.id) + '"' })
@@ -125,20 +128,18 @@
       "</article>";
     }).join("");
 
-    return '<div class="page">' +
+    return '<div class="page scenic-page">' +
       UI.pageHead({
-        kicker: "SCENIC ARCHIVE / 景区档案",
-        title: "欢迎使用景枢",
+        title: "景区档案",
         actions: btn("新建景区", "project-new", { cls: "btn-primary", icon: "plus" }),
       }) +
       hero +
-      '<div class="row-between mt-18" style="margin-bottom:10px">' +
-        '<div><div class="section-label" style="margin-bottom:2px">已建景区 / PROJECTS</div>' +
-        '<div class="tiny muted">共 ' + projects.length + " 个 · 当前项目会带入全部页面</div></div>" +
-        '<button type="button" class="btn btn-sm" data-action="project-new">' + I.icon("plus") + "新建</button>" +
-      "</div>" +
-      '<div class="project-grid">' + (cards || UI.empty("还没有景区", "新建一个景区，从 43 项参数开始。")) + "</div>" +
-      '<footer class="page-footer"><div><b>景枢 DispatchOS</b> · ' + esc(s.meta.version) +
+      '<section class="scenic-projects" aria-labelledby="scenic-projects-title">' +
+        '<div class="scenic-projects-head"><h2 id="scenic-projects-title">已建景区</h2>' +
+        '<span>共 ' + projects.length + ' 个</span></div>' +
+        (cards ? '<div class="project-grid">' + cards + '</div>' : UI.empty("还没有景区", "新建一个景区，从 43 项参数开始。")) +
+      '</section>' +
+      '<footer class="page-footer"><div><b>' + DOS.appName + '</b> · ' + esc(s.meta.version) +
         " · 演示日期 " + esc(s.meta.date) + '</div><div class="footer-right">景区档案 · 数据源 ' +
         esc(s.meta.source.label) + "</div></footer>" +
     "</div>";
@@ -157,9 +158,7 @@
     const selectedGroup = app.state.params.group || "all";
     const flag = app.state.params.flag || "all";
 
-    const groupChips = '<button type="button" class="filter-chip ' + (selectedGroup === "all" ? "is-active" : "") +
-      '" data-param-group="all">全部<span class="count">' + (p.fields || []).length + "</span></button>" +
-      groups.map((g) => '<button type="button" class="filter-chip ' + (selectedGroup === g.id ? "is-active" : "") +
+    const groupChips = groups.map((g) => '<button type="button" class="filter-chip ' + (selectedGroup === g.id ? "is-active" : "") +
         '" data-param-group="' + esc(g.id) + '">' + esc(g.name) +
         '<span class="count">' + Number(g.filled || 0) + "/" + Number(g.total || 0) + "</span></button>").join("");
 
@@ -173,15 +172,6 @@
     const flagChips = flagDefs.map(([id, label, count]) =>
       '<button type="button" class="filter-chip ' + (flag === id ? "is-active" : "") + '" data-param-flag="' + id + '">' +
       label + '<span class="count">' + count + "</span></button>").join("");
-
-    const assumptions = p.assumptions || {};
-    const assumptionList = Object.keys(assumptions).length
-      ? Object.keys(assumptions).map((k) => {
-          const a = assumptions[k];
-          return '<div class="history-item"><div class="history-time">' + esc(k) + '</div><div class="history-text"><b>' +
-            esc(a.label || k) + "</b> 按 <b>" + esc(a.value) + "</b> 补全<br><span>" + esc(a.why || "") + "</span></div></div>";
-        }).join("")
-      : '<div class="history-empty">当前参数没有程序补全项。</div>';
 
     const missing = (p.missing_p0 || []).map((k) => {
       const f = (p.fields || []).find((x) => x.key === k);
@@ -234,12 +224,7 @@
         '<button type="button" class="btn btn-primary" data-action="save-params" data-save-params="1"' +
           (!canEdit || !dirtyCount ? " disabled" : "") + ">" + I.icon("check") + "保存并重算</button>" +
       "</div>" +
-      '<div class="card mt-14"><div class="card-head"><div><div class="card-title">' + I.icon("info") + " 程序补全的假设†</div>" +
-        '<div class="card-sub">这些不是景区填的数，答辩时应逐条说明</div></div>' +
-        '<span class="tag tag--amber">' + Object.keys(assumptions).length + " 项</span></div>" +
-        '<div class="card-body"><div class="history">' + assumptionList + "</div>" +
-        '<div class="desk-note" style="margin-top:10px">缺项会以默认值补齐并标 †；可疑值会阻断“可执行”判断，但不会悄悄改数。</div></div></div>' +
-      '<footer class="page-footer"><div><b>景枢 DispatchOS</b> · 参数口径 v1 · ' + esc(p.granularity || "整点粒度") +
+      '<footer class="page-footer"><div><b>' + DOS.appName + '</b> · 参数口径 v1 · ' + esc(p.granularity || "整点粒度") +
         '</div><div class="footer-right">来源：' + esc(p.note || "景区填报 / 项目测算 / 假设") + "</div></footer>" +
     "</div>";
   };
@@ -252,20 +237,31 @@
     const o = s.overview;
     const curve = o.curve || {};
     const mode = s.mode || o.mode || {};
-    const kpis = (o.kpis || []).map((k) => UI.kpi(k, s.meta)).join("");
-
-    const alerts = (o.alerts || []).map((a) => {
-      const tone = UI.riskClass(a.risk);
-      const clickable = !!a.card_id;
-      return '<button type="button" class="alert ' + tone + '" data-alert-card="' + esc(a.card_id || "") + '"' +
-        (clickable ? ' title="查看建议卡"' : ' disabled') + ">" +
-        '<span class="alert-ic">' + I.icon(a.risk === "red" ? "alert" : a.risk === "warn" ? "alert" : "info") + "</span>" +
-        '<span class="alert-main"><span class="alert-title">' + esc(a.title) + "</span>" +
-        '<span class="alert-detail">' + esc(a.detail) + "</span>" +
-        '<span class="alert-meta">' + UI.tag(UI.riskLabel(a.risk), a.risk === "red" ? "red" : a.risk === "warn" ? "amber" : "blue") +
-          (a.time ? " · " + esc(a.time) : "") + (clickable ? ' · <span class="alert-go">查看建议卡 ' + I.icon("arrowRight") + "</span>" : "") +
-        "</span></span></button>";
-    }).join("");
+    const meta = s.meta;
+    const canOpenDesk = (meta.pages || []).includes("desk");
+    const kpis = (o.kpis || []).map((k) => UI.kpi(k, meta, {
+      featured: k.key === "margin",
+      status: { red: "缺口", warn: "偏紧", ok: "正常" }[k.status],
+    })).join("");
+    const alerts = o.alerts || [];
+    const redCount = alerts.filter((a) => a.risk === "red").length;
+    const alertRows = alerts.map((a) => {
+      const tone = { red: "red", warn: "amber", info: "blue" }[a.risk] || "slate";
+      return '<article class="overview-alert ' + UI.riskClass(a.risk) + '">' +
+        '<div class="overview-alert-meta">' + UI.tag(UI.riskLabel(a.risk), tone) +
+          (a.time ? '<span>' + esc(a.time) + '</span>' : '') + '</div>' +
+        '<h3>' + esc(a.title) + '</h3>' +
+        '<p>' + esc(a.detail) + '</p>' +
+        (a.card_id && canOpenDesk ? '<button type="button" class="card-link overview-alert-link" data-alert-card="' +
+          esc(a.card_id) + '">查看建议卡 ' + I.icon("arrowRight") + '</button>' : '') +
+        '</article>';
+    });
+    const sceneOptions = (meta.scenes || []).map((scene) =>
+      '<option value="' + esc(scene.id) + '"' + (scene.id === (meta.scene || {}).id ? ' selected' : '') + '>' +
+      esc(scene.label || scene.id) + '</option>').join("");
+    const asOf = [meta.date, o.as_of || (meta.scene || {}).time].filter(Boolean).join(" ");
+    const source = meta.source || {};
+    const sourceLabel = source.label || (app.state.online ? "在线数据" : "离线快照");
 
     const bottleneck = (o.bottleneck || []).map((b) =>
       '<div class="bottleneck"><span class="bottleneck-rank">' + String(b.rank).padStart(2, "0") + "</span>" +
@@ -286,17 +282,29 @@
     const steps = (mode.base && mode.base.steps || []).slice(0, 3).map((x, i) =>
       '<div class="mode-step"><i>' + (i + 1) + "</i><span>" + esc(x) + "</span></div>").join("");
 
-    return '<div class="page">' +
+    return '<div class="page overview-page">' +
       UI.pageHead({
-        kicker: "OPERATIONS OVERVIEW / 运行实况",
         title: "运行实况",
+        desc: '<span>数据截至 <b>' + esc(asOf || "—") + '</b></span>' +
+          '<span class="source-pill' + (source.mode === "offline" ? ' is-offline' : '') + '" title="' +
+          esc(source.note || sourceLabel) + '"><i class="dot" aria-hidden="true"></i>' + esc(sourceLabel) + '</span>',
         actions: '<button type="button" class="btn" data-action="refresh">' + I.icon("refresh") + "刷新" +
-          '</button><button type="button" class="btn btn-primary" data-nav="desk">' + I.icon("decision") + "去调度建议</button>",
+          '</button>' + (canOpenDesk ? '<button type="button" class="btn btn-primary" data-nav="desk">' +
+            I.icon("decision") + "去调度建议</button>" : ""),
       }) +
-      '<div class="grid grid-4">' + kpis + "</div>" +
-      '<div class="grid grid-main mt-14">' +
-        '<div class="stack">' +
-          '<section class="card"><div class="card-head"><div><div class="card-title">分时需求 vs 有效运力</div>' +
+      (sceneOptions ? '<label class="overview-scene"><span>运行场景</span><span class="select-wrap">' + I.icon("layers") +
+        '<select class="select" data-select="scene">' + sceneOptions + '</select></span></label>' : '') +
+      '<div class="overview-layout">' +
+        '<section class="card overview-alerts" aria-labelledby="overview-alerts-title">' +
+          '<div class="card-head"><h2 class="card-title" id="overview-alerts-title">实时预警</h2>' +
+            (redCount ? UI.tag(redCount + " 条红线", "red") : UI.tag("无红线", "green")) + '</div>' +
+          '<div class="card-body">' + (alertRows[0] || UI.empty("暂无预警", "当前所有检查项都在安全线以上。")) +
+            (alertRows.length > 1 ? '<details class="overview-alert-more"><summary>其余 ' +
+              (alertRows.length - 1) + ' 条预警</summary><div class="overview-alert-list">' +
+              alertRows.slice(1).join("") + '</div></details>' : '') + '</div></section>' +
+        '<section class="grid grid-4 overview-kpis" aria-label="运力指标">' + kpis + '</section>' +
+        '<section class="card overview-chart" aria-labelledby="overview-chart-title">' +
+            '<div class="card-head"><div><h2 class="card-title" id="overview-chart-title">分时需求 vs 有效运力</h2>' +
             '<div class="card-sub">' + esc(curve.note || "整点粒度；安全线按 15% 余量折算") + "</div></div>" +
             '<div class="row">' + UI.evidence(s.meta, "calculated") + '<span class="tag tag--outline">' + esc(curve.unit || "人/小时") + "</span></div></div>" +
             '<div class="card-body">' +
@@ -312,41 +320,31 @@
               }) +
               UI.marginStrip(curve) +
             "</div></section>" +
-          '<section class="card"><div class="card-head"><div><div class="card-title">瓶颈排序</div>' +
-            '<div class="card-sub">不是所有异常都值得动手，先处理最靠前的</div></div></div>' +
+      "</div>" +
+      '<div class="grid grid-2 overview-details">' +
+          '<section class="card"><div class="card-head"><h2 class="card-title">瓶颈排序</h2></div>' +
             '<div class="card-body"><div class="bottleneck-list">' + (bottleneck || UI.empty("当前无瓶颈")) + "</div></div></section>" +
-          '<div class="grid grid-2">' +
-            '<section class="card"><div class="card-head"><div><div class="card-title">当前调度模式</div>' +
-              '<div class="card-sub">由系统协同能力与延迟决定，不靠拍脑袋</div></div></div>' +
+            '<section class="card"><div class="card-head"><h2 class="card-title">当前调度模式</h2></div>' +
               '<div class="card-body"><div class="mode-head"><span class="mode-level is-' + esc(mode.level || "semi") + '">' +
                 esc(MODE_LABEL[mode.level] || mode.level || "半实时") + "</span>" +
                 '<span class="tiny muted">延迟 ' + esc(mode.latency || "—") + " 分钟</span></div>" +
                 '<div class="mode-name">' + esc(mode.base && mode.base.name || "待判断") + "</div>" +
                 '<div class="mode-summary">' + esc(mode.base && mode.base.summary || "") + "</div>" +
                 '<div class="mode-steps">' + steps + "</div>" +
-                '<div class="row mt-10"><button class="btn btn-sm" data-action="mode">' + I.icon("layers") + "查看方案库</button>" +
-                '<button class="btn btn-sm btn-ghost" data-nav="desk">去调度建议 ' + I.icon("arrowRight") + "</button></div>" +
+                '<div class="row mt-10"><button class="btn btn-sm" data-action="mode">' + I.icon("layers") + "查看方案库</button></div>" +
               "</div></section>" +
-            '<section class="card"><div class="card-head"><div><div class="card-title">线路骨架</div>' +
+            '<section class="card"><div class="card-head"><div><h2 class="card-title">线路骨架</h2>' +
               '<div class="card-sub">无 GIS 坐标，用拓扑示意替代</div></div></div>' +
               '<div class="card-body">' + UI.skeletonSvg(o.skeleton) + "</div></section>" +
-          "</div>" +
-        "</div>" +
-        '<div class="stack">' +
-          '<section class="card"><div class="card-head"><div><div class="card-title">实时预警</div>' +
-            '<div class="card-sub">' + (o.alerts || []).length + " 条 · 按风险排序</div></div>" +
-            '<span class="tag tag--red">' + ((o.alerts || []).filter((a) => a.risk === "red").length) + " 红线</span></div>" +
-            '<div class="card-body"><div class="alert-list">' + (alerts || UI.empty("暂无预警", "当前所有检查项都在安全线以上。")) + "</div></div></section>" +
-          '<section class="card"><div class="card-head"><div><div class="card-title">敏感性 · 5 档</div>' +
+          '<section class="card"><div class="card-head"><div><h2 class="card-title">敏感性 · 5 档</h2>' +
             '<div class="card-sub">没有置信区间，用“车数 / 循环时间”两档做不确定性表达</div></div>' +
             UI.evidence(s.meta, "calculated") + "</div>" +
             '<div class="card-body" style="padding-top:0"><div class="table-wrap"><table class="table sens-table"><thead><tr>' +
               "<th>情景</th><th>车数</th><th>运力</th><th>缺口</th><th>利用率</th></tr></thead><tbody>" +
               (sensRows || '<tr><td colspan="5" class="muted">暂无敏感性结果</td></tr>') + "</tbody></table></div>" +
             "</div></section>" +
-        "</div>" +
       "</div>" +
-      '<footer class="page-footer"><div><b>景枢 DispatchOS</b> · 数据截至 ' + esc(o.as_of || s.meta.date) +
+      '<footer class="page-footer"><div><b>' + DOS.appName + '</b> · ' + esc(source.note || sourceLabel) +
         '</div><div class="footer-right">预警口径：红线 / 警示 / 提示 · 安全线 15%</div></footer>' +
     "</div>";
   };
@@ -480,7 +478,7 @@
             "</div></section>" +
         "</div>" +
       "</div>" +
-      '<footer class="page-footer"><div><b>景枢 DispatchOS</b> · 运行计划 · ' + esc(p.date || s.meta.date) +
+      '<footer class="page-footer"><div><b>' + DOS.appName + '</b> · 运行计划 · ' + esc(p.date || s.meta.date) +
         '</div><div class="footer-right">目标车数按 15% 安全线反算；改动需审批后生效</div></footer>' +
     "</div>";
   };
@@ -697,7 +695,7 @@
           '<span class="tag tag--outline" style="margin-left:2px">11</span></button>',
       }) +
       '<div class="desk-layout">' + rail + detail + side + "</div>" +
-      '<footer class="page-footer"><div><b>景枢 DispatchOS</b> · 建议卡 ' + cards.length + " 张 · 待批 " + d.counts.pending +
+      '<footer class="page-footer"><div><b>' + DOS.appName + '</b> · 建议卡 ' + cards.length + " 张 · 待批 " + d.counts.pending +
         '</div><div class="footer-right">审计台账 ' + (d.audit || []).length + " 条 · 决策会写入 decisions.jsonl</div></footer>" +
     "</div>";
   };
@@ -831,7 +829,7 @@
           '<div class="matrix-row"><span>待接单</span><b>' + dispatched + '</b></div><div class="matrix-row"><span>执行中</span><b>' + accepted + '</b></div><div class="matrix-row"><span>已回执</span><b>' + reported + '</b></div>' +
         '</div></section>' +
       '</div></div>' +
-      '<footer class="page-footer"><div><b>景枢 DispatchOS</b> · 司机中枢 · ' + esc(s.meta.date) +
+      '<footer class="page-footer"><div><b>' + DOS.appName + '</b> · 司机中枢 · ' + esc(s.meta.date) +
         '</div><div class="footer-right">统计来源：任务单与现场回执 · ' + esc(s.meta.source && s.meta.source.label || "") + '</div></footer></div>';
   };
 
@@ -934,7 +932,7 @@
             '<div style="margin-top:6px;color:rgba(244,234,215,.56);font-size:10.5px;line-height:1.6">闭环不是一句口号：每个节点都有一个人、一个时间、一条留痕。</div></div>' +
         "</div>" +
       "</div>" +
-      '<footer class="page-footer"><div><b>景枢 DispatchOS</b> · 运营复盘 · ' + esc(r.date || s.meta.date) +
+      '<footer class="page-footer"><div><b>' + DOS.appName + '</b> · 运营复盘 · ' + esc(r.date || s.meta.date) +
         '</div><div class="footer-right">实际值为演示数据† · 未接入票务 / 闸机 / GPS</div></footer>' +
     "</div>";
   };

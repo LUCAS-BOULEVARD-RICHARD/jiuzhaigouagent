@@ -5,22 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light">
   <meta name="theme-color" content="#0c2b24">
-  <meta name="description" content="九寨景枢 · 景区运力调度工作台：参数管理、运行实况、运行计划、调度建议、司机中枢与运营复盘。">
-  <title>景枢 DispatchOS · 景区运力调度工作台</title>
+  <meta name="description" content="智调中枢 · 景区运力调度工作台：参数管理、运行实况、运行计划、调度建议、司机中枢与运营复盘。">
+  <title>智调中枢</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230c2b24'/%3E%3Cpath d='M16 20h32v7H16zm0 13h20v7H16zm0 13h32v7H16z' fill='%23e8dcc0'/%3E%3Ccircle cx='47' cy='36.5' r='5' fill='%23c08a4e'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=overview-layout">
 </head>
 <body>
   <div id="boot-splash" class="boot-splash" role="status" aria-live="polite">
-    <div class="boot-mark">景枢</div>
+    <div class="boot-mark">智调中枢</div>
     <div class="boot-line"><span></span></div>
     <p>正在装配今日调度台…</p>
   </div>
 
-  <div id="app" class="app"></div>
-  <a class="guest-launch" href="guest.html" target="_blank" rel="noopener">打开游客端 ↗</a>
-  <a class="hub-launch" href="#driver" data-nav="driver">司机中枢</a>
-  <a class="driver-launch" href="driver.html?role=driver" target="_blank" rel="noopener">打开司机端 ↗</a>
+  <section id="launch-screen" class="launch-screen" role="dialog" aria-modal="true" aria-labelledby="launch-title">
+    <div class="launch-frame">
+      <div class="launch-brand"><span class="launch-mark">智</span><span>智调中枢 <small>DispatchOS</small></span></div>
+      <div class="launch-main">
+        <h1 id="launch-title">智调中枢</h1>
+        <p class="launch-lead">让每一程，都有序出发。</p>
+        <button id="launch-confirm" class="btn btn-primary btn-lg" type="button" autofocus>确认</button>
+      </div>
+      <div class="launch-foot"><span>景区运营　车辆调度　现场协同</span><span>智调中枢</span></div>
+    </div>
+  </section>
+
+  <div id="app" class="app" inert></div>
+  <a class="guest-launch" href="guest.html" target="_blank" rel="noopener" inert>打开游客端 ↗</a>
+  <a class="hub-launch" href="#driver" data-nav="driver" inert>司机中枢</a>
+  <a class="driver-launch" href="driver.html?role=driver" target="_blank" rel="noopener" inert>打开司机端 ↗</a>
   <div id="modal-root" class="modal-root" aria-live="polite"></div>
   <div id="toast-root" class="toast-root" aria-live="polite" aria-atomic="false"></div>
   <script src="js/assistant.js"></script>
@@ -31,9 +43,10 @@
 
   <script src="demo_snapshot.js"></script>
   <script src="guest-adapter.js"></script>
-  <script src="js/core.js"></script>
-  <script src="js/pages.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/core.js?v=overview-layout"></script>
+  <script src="js/pages.js?v=overview-layout"></script>
+  <script src="js/launch.js"></script>
+  <script src="js/app.js?v=overview-layout"></script>
 </body>
 </html>
 
